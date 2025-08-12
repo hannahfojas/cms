@@ -75,7 +75,7 @@ const Profile = () => {
         />
         <input
           type="text"
-          placeholder="University"
+          placeholder="Company"
           value={formData.university}
           onChange={(e) => setFormData({ ...formData, university: e.target.value })}
           className="w-full mb-4 p-2 border rounded"

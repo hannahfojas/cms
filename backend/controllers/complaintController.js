@@ -3,12 +3,7 @@ const Complaint = require('../models/Complaint');
 // US1: Create complaint
 exports.createComplaint = async (req, res) => {
   try {
-    //reject if someone tries to set a non-Open status
-    if (req.body.status && req.body.status !== 'Open') {
-      return res.status(400).json({ message: 'New complaints must start as Open' });
-    }
-
-    const payload = { ...req.body, status: 'Open' };
+    const payload = { ...req.body, status: 'Open' }; // enforce Open on create
     const doc = await Complaint.create(payload);
     res.status(201).json(doc);
   } catch (err) {

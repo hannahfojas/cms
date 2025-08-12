@@ -1,22 +1,35 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import axiosInstance from '../axiosConfig';
 
 const TaskList = ({ tasks, setTasks, setEditingTask }) => {
-  // Load all complaints
+  const [busyId, setBusyId] = useState(null);
+
   const load = async () => {
-    const { data } = await axiosInstance.get('/api/complaints'); // includes ageDays if Epic 2 backend is in
-    setTasks(data);
+    try {
+      const { data } = await axiosInstance.get('/api/complaints');
+      setTasks(data);
+    } catch (err) {
+      alert('Failed to load complaints.');
+      console.error(err);
+    }
   };
 
   useEffect(() => { load(); }, []);
 
   const onEdit = (item) => setEditingTask(item);
 
-  // US4: Close without resolution (status change handled here only for this action)
   const closeWithoutResolution = async (id) => {
     if (!window.confirm('Close without resolution?')) return;
-    const { data } = await axiosInstance.post(`/api/complaints/${id}/close`);
-    setTasks(prev => prev.map(x => x._id === data._id ? data : x));
+    try {
+      setBusyId(id);
+      const { data } = await axiosInstance.post(`/api/complaints/${id}/close`);
+      setTasks(prev => prev.map(x => (x._id === data._id ? data : x)));
+    } catch (err) {
+      alert('Failed to close complaint.');
+      console.error(err);
+    } finally {
+      setBusyId(null);
+    }
   };
 
   return (
@@ -30,7 +43,7 @@ const TaskList = ({ tasks, setTasks, setEditingTask }) => {
             <th className="p-2 border">Category</th>
             <th className="p-2 border">Assigned To</th>
             <th className="p-2 border">Status</th>
-            <th className="p-2 border">Age (days)</th>{/* Shown if API returns ageDays */}
+            <th className="p-2 border">Age (days)</th>
             <th className="p-2 border">Actions</th>
           </tr>
         </thead>
@@ -56,9 +69,10 @@ const TaskList = ({ tasks, setTasks, setEditingTask }) => {
                 {x.status !== 'Closed - No Resolution' && (
                   <button
                     onClick={() => closeWithoutResolution(x._id)}
-                    className="px-2 py-1 bg-gray-200 rounded"
+                    className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
+                    disabled={busyId === x._id}
                   >
-                    Close w/o Res
+                    {busyId === x._id ? 'Closing…' : 'Close w/o Res'}
                   </button>
                 )}
               </td>
