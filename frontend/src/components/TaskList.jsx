@@ -1,10 +1,16 @@
 import { useEffect } from 'react';
 import axiosInstance from '../axiosConfig';
 
+const NEXT = {
+  'Open': ['In Progress', 'Resolved'],
+  'In Progress': ['Resolved'],
+  'Resolved': [],
+  'Closed - No Resolution': []
+};
+
 const TaskList = ({ tasks, setTasks, setEditingTask }) => {
-  //Load complaints
   const load = async () => {
-    const { data } = await axiosInstance.get('/api/complaints');
+    const { data } = await axiosInstance.get('/api/complaints'); // hmm, should return agedays, test!
     setTasks(data);
   };
 
@@ -12,11 +18,15 @@ const TaskList = ({ tasks, setTasks, setEditingTask }) => {
 
   const onEdit = (item) => setEditingTask(item);
 
-  //Close without resolution
   const closeWithoutResolution = async (id) => {
     if (!window.confirm('Close without resolution?')) return;
     const { data } = await axiosInstance.post(`/api/complaints/${id}/close`);
-    setTasks((prev) => prev.map((x) => (x._id === data._id ? data : x)));
+    setTasks(prev => prev.map(x => x._id === data._id ? data : x));
+  };
+
+  const changeStatus = async (id, status) => {
+    const { data } = await axiosInstance.post(`/api/complaints/${id}/status`, { status });
+    setTasks(prev => prev.map(x => x._id === data._id ? data : x));
   };
 
   return (
@@ -30,6 +40,7 @@ const TaskList = ({ tasks, setTasks, setEditingTask }) => {
             <th className="p-2 border">Category</th>
             <th className="p-2 border">Assigned To</th>
             <th className="p-2 border">Status</th>
+            <th className="p-2 border">Age (days)</th>
             <th className="p-2 border">Actions</th>
           </tr>
         </thead>
@@ -44,24 +55,23 @@ const TaskList = ({ tasks, setTasks, setEditingTask }) => {
               <td className="p-2 border">{x.category}</td>
               <td className="p-2 border">{x.assignedTo}</td>
               <td className="p-2 border">{x.status}</td>
+              <td className="p-2 border">{x.ageDays}</td>
               <td className="p-2 border space-x-2">
-                <button onClick={() => onEdit(x)} className="px-2 py-1 bg-yellow-200 rounded">
-                  Edit
-                </button>
+                <button onClick={() => onEdit(x)} className="px-2 py-1 bg-yellow-200 rounded">Edit</button>
                 {x.status !== 'Closed - No Resolution' && (
-                  <button onClick={() => closeWithoutResolution(x._id)} className="px-2 py-1 bg-gray-200 rounded">
-                    Close w/o Res
-                  </button>
+                  <button onClick={() => closeWithoutResolution(x._id)} className="px-2 py-1 bg-gray-200 rounded">Close w/o Res</button>
+                )}
+                {NEXT[x.status]?.length > 0 && (
+                  <select defaultValue="" onChange={e => e.target.value && changeStatus(x._id, e.target.value)} className="border p-1">
+                    <option value="">Change status…</option>
+                    {NEXT[x.status].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
                 )}
               </td>
             </tr>
           ))}
           {tasks.length === 0 && (
-            <tr>
-              <td colSpan={6} className="p-4 text-center text-gray-500">
-                No complaints yet
-              </td>
-            </tr>
+            <tr><td colSpan={7} className="p-4 text-center text-gray-500">No complaints</td></tr>
           )}
         </tbody>
       </table>
