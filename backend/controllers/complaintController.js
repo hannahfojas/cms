@@ -57,3 +57,18 @@ exports.closeWithoutResolution = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
+
+//This is for status Updatess woohoo
+exports.updateStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const update = { status };
+    if (status === 'Resolved') update.completionDate = new Date();
+
+    const doc = await Complaint.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
+    if (!doc) return res.status(404).json({ message: 'Not found' });
+    res.json(doc);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
