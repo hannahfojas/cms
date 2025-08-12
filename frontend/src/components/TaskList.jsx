@@ -1,43 +1,70 @@
-import { useAuth } from '../context/AuthContext';
+import { useEffect } from 'react';
 import axiosInstance from '../axiosConfig';
 
 const TaskList = ({ tasks, setTasks, setEditingTask }) => {
-  const { user } = useAuth();
+  //Load complaints
+  const load = async () => {
+    const { data } = await axiosInstance.get('/api/complaints');
+    setTasks(data);
+  };
 
-  const handleDelete = async (taskId) => {
-    try {
-      await axiosInstance.delete(`/api/tasks/${taskId}`, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
-      setTasks(tasks.filter((task) => task._id !== taskId));
-    } catch (error) {
-      alert('Failed to delete task.');
-    }
+  useEffect(() => { load(); }, []);
+
+  const onEdit = (item) => setEditingTask(item);
+
+  //Close without resolution
+  const closeWithoutResolution = async (id) => {
+    if (!window.confirm('Close without resolution?')) return;
+    const { data } = await axiosInstance.post(`/api/complaints/${id}/close`);
+    setTasks((prev) => prev.map((x) => (x._id === data._id ? data : x)));
   };
 
   return (
-    <div>
-      {tasks.map((task) => (
-        <div key={task._id} className="bg-gray-100 p-4 mb-4 rounded shadow">
-          <h2 className="font-bold">{task.title}</h2>
-          <p>{task.description}</p>
-          <p className="text-sm text-gray-500">Deadline: {new Date(task.deadline).toLocaleDateString()}</p>
-          <div className="mt-2">
-            <button
-              onClick={() => setEditingTask(task)}
-              className="mr-2 bg-yellow-500 text-white px-4 py-2 rounded"
-            >
-              Edit
-            </button>
-            <button
-              onClick={() => handleDelete(task._id)}
-              className="bg-red-500 text-white px-4 py-2 rounded"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      ))}
+    <div className="max-w-5xl mx-auto">
+      <h2 className="text-xl font-semibold mb-3">Complaints</h2>
+      <table className="w-full border text-sm">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="p-2 border">Title</th>
+            <th className="p-2 border">Complainant</th>
+            <th className="p-2 border">Category</th>
+            <th className="p-2 border">Assigned To</th>
+            <th className="p-2 border">Status</th>
+            <th className="p-2 border">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tasks.map((x) => (
+            <tr key={x._id}>
+              <td className="p-2 border">{x.title}</td>
+              <td className="p-2 border">
+                {x.complainantName}
+                <div className="text-xs text-gray-500">{x.email}</div>
+              </td>
+              <td className="p-2 border">{x.category}</td>
+              <td className="p-2 border">{x.assignedTo}</td>
+              <td className="p-2 border">{x.status}</td>
+              <td className="p-2 border space-x-2">
+                <button onClick={() => onEdit(x)} className="px-2 py-1 bg-yellow-200 rounded">
+                  Edit
+                </button>
+                {x.status !== 'Closed - No Resolution' && (
+                  <button onClick={() => closeWithoutResolution(x._id)} className="px-2 py-1 bg-gray-200 rounded">
+                    Close w/o Res
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+          {tasks.length === 0 && (
+            <tr>
+              <td colSpan={6} className="p-4 text-center text-gray-500">
+                No complaints yet
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
     </div>
   );
 };
