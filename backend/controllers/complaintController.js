@@ -1,10 +1,7 @@
 const Complaint = require('../models/Complaint');
 
-// Create complaint
-const createComplaint = async (
-  req,
-  res
-) => {
+// US1: Create complaint
+exports.createComplaint = async (req, res) => {
   try {
     const payload = { ...req.body, status: 'Open' }; // enforce Open on create
     const doc = await Complaint.create(payload);
