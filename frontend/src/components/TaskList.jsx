@@ -66,13 +66,13 @@ const TaskList = ({ tasks, setTasks, setEditingTask }) => {
                 >
                   Edit
                 </button>
-                {x.status !== 'Closed - No Resolution' && (
+                {(x.status !== 'Closed - No Resolution' && x.status !== 'Resolved') && (
                   <button
                     onClick={() => closeWithoutResolution(x._id)}
                     className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
                     disabled={busyId === x._id}
                   >
-                    {busyId === x._id ? 'Closing…' : 'Close w/o Res'}
+                    {busyId === x._id ? 'Closing…' : 'Close with No Resolution'}
                   </button>
                 )}
               </td>
