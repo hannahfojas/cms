@@ -14,7 +14,7 @@ const complaintSchema = new mongoose.Schema({
   category: { type: String, enum: ['Low', 'Moderate', 'High'], required: true },
   assignedTo: { type: String, required: true },
 
-  status: {type: String, enum: ['Open','In Progress','Completed','Closed - No Resolution'], default: 'Open'}
+  status: {type: String, enum: ['Open','In Progress','Resolved','Closed - No Resolution'], default: 'Open'}
 });
 
 module.exports = mongoose.model('Complaint', complaintSchema);
