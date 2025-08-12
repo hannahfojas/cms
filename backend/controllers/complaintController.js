@@ -14,7 +14,11 @@ const createComplaint = async (
   }
 };
 
+<<<<<<< HEAD
 // Get all complaints (includes ageDays has been added also)
+=======
+// Get all complaints
+>>>>>>> 8619fb8 (refine add,view, update, resolution)
 const getComplaints = async (
   req,
   res
@@ -53,7 +57,11 @@ const updateComplaint = async (
   }
 };
 
+<<<<<<< HEAD
 // Close without resolution
+=======
+// Close without resolution fiunc
+>>>>>>> 8619fb8 (refine add,view, update, resolution)
 const closeWithoutResolution = async (
   req,
   res
@@ -61,7 +69,11 @@ const closeWithoutResolution = async (
   try {
     const doc = await Complaint.findByIdAndUpdate(
       req.params.id,
+<<<<<<< HEAD
       { status: 'Closed - No Resolution', completionDate: new Date() }, //stops aging also if closed even if no reso
+=======
+      { status: 'Closed - No Resolution' }, // (original behavior: no completionDate here)
+>>>>>>> 8619fb8 (refine add,view, update, resolution)
       { new: true }
     );
     if (!doc) return res.status(404).json({ message: 'Not found' });
@@ -93,6 +105,7 @@ const updateStatus = async (
   }
 };
 
+<<<<<<< HEAD
 const addResolutionNote = async (
   req,
   res
@@ -123,11 +136,18 @@ const addResolutionNote = async (
   }
 };
 
+=======
+>>>>>>> 8619fb8 (refine add,view, update, resolution)
 module.exports = {
   createComplaint,
   getComplaints,
   updateComplaint,
   closeWithoutResolution,
+<<<<<<< HEAD
   updateStatus,
   addResolutionNote
 };
+=======
+  updateStatus
+};
+>>>>>>> 8619fb8 (refine add,view, update, resolution)
