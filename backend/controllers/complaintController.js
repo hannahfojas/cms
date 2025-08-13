@@ -1,9 +1,12 @@
 const Complaint = require('../models/Complaint');
 
 // US1: Create complaint
-exports.createComplaint = async (req, res) => {
+const createComplaint = async (
+  req,
+  res
+) => {
   try {
-    const payload = { ...req.body, status: 'Open' };
+    const payload = { ...req.body, status: 'Open' }; // enforce Open on create
     const doc = await Complaint.create(payload);
     res.status(201).json(doc);
   } catch (err) {
@@ -11,8 +14,11 @@ exports.createComplaint = async (req, res) => {
   }
 };
 
-// US2: Get all complaint
-exports.getComplaints = async (req, res) => {
+// US2: Get all complaints (includes ageDays)
+const getComplaints = async (
+  req,
+  res
+) => {
   try {
     const docs = await Complaint.find().sort({ createdAt: -1 });
     const now = Date.now();
@@ -31,7 +37,10 @@ exports.getComplaints = async (req, res) => {
 };
 
 // US3: Update complaint details
-exports.updateComplaint = async (req, res) => {
+const updateComplaint = async (
+  req,
+  res
+) => {
   try {
     const doc = await Complaint.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -45,11 +54,14 @@ exports.updateComplaint = async (req, res) => {
 };
 
 // US4: Close without resolution
-exports.closeWithoutResolution = async (req, res) => {
+const closeWithoutResolution = async (
+  req,
+  res
+) => {
   try {
     const doc = await Complaint.findByIdAndUpdate(
       req.params.id,
-      { status: 'Closed - No Resolution' },
+      { status: 'Closed - No Resolution' }, // (original behavior: no completionDate here)
       { new: true }
     );
     if (!doc) return res.status(404).json({ message: 'Not found' });
@@ -59,17 +71,63 @@ exports.closeWithoutResolution = async (req, res) => {
   }
 };
 
-//This is for status Updatess woohoo
-exports.updateStatus = async (req, res) => {
+// US5: Update status (sets completionDate when Resolved)
+const updateStatus = async (
+  req,
+  res
+) => {
   try {
     const { status } = req.body;
     const update = { status };
     if (status === 'Resolved') update.completionDate = new Date();
 
-    const doc = await Complaint.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
+    const doc = await Complaint.findByIdAndUpdate(
+      req.params.id,
+      update,
+      { new: true, runValidators: true }
+    );
     if (!doc) return res.status(404).json({ message: 'Not found' });
     res.json(doc);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
+};
+
+const addResolutionNote = async (
+  req,
+  res
+) => {
+  try {
+    const { text, author } = req.body;
+    if (!text || !text.trim()) {
+      return res.status(400).json({ message: 'Note text is required' });
+    }
+
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) return res.status(404).json({ message: 'Not found' });
+
+    if (complaint.status !== 'Resolved') {
+      return res.status(400).json({ message: 'Resolution notes can only be added when complaint is Resolved' });
+    }
+
+    complaint.resolutionNotes = complaint.resolutionNotes || [];
+    complaint.resolutionNotes.push({
+      text: text.trim(),
+      author: author && author.trim() ? author.trim() : 'Staff'
+    });
+
+    const updated = await complaint.save();
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = {
+  createComplaint,
+  getComplaints,
+  updateComplaint,
+  closeWithoutResolution,
+  updateStatus,
+  addResolutionNote
 };
