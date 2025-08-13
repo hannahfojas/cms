@@ -1,113 +1,158 @@
 import { useState, useEffect } from 'react';
 import axiosInstance from '../axiosConfig';
 
-const TaskForm = ({ tasks, setTasks, editingTask, setEditingTask }) => {
-  const [formData, setFormData] = useState({
+const TaskForm = ({ editingTask, setEditingTask, setTasks }) => {
+  const [form, setForm] = useState({
     complainantName: '',
     email: '',
     phoneNumber: '',
     title: '',
     description: '',
     category: 'Low',
-    assignedTo: ''
+    assignedTo: '',
+    status: 'Open'
   });
 
   useEffect(() => {
     if (editingTask) {
-      setFormData({
+      setForm({
         complainantName: editingTask.complainantName || '',
         email: editingTask.email || '',
         phoneNumber: editingTask.phoneNumber || '',
         title: editingTask.title || '',
         description: editingTask.description || '',
         category: editingTask.category || 'Low',
-        assignedTo: editingTask.assignedTo || ''
+        assignedTo: editingTask.assignedTo || '',
+        status: editingTask.status || 'Open'
       });
     } else {
-      setFormData({
+      // reset to defaults when not editing
+      setForm({
         complainantName: '',
         email: '',
         phoneNumber: '',
         title: '',
         description: '',
         category: 'Low',
-        assignedTo: ''
+        assignedTo: '',
+        status: 'Open'
       });
     }
   }, [editingTask]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((p) => ({ ...p, [name]: value }));
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (editingTask) {
-      // US3: Update complaint details
-      const { data } = await axiosInstance.patch(`/api/complaints/${editingTask._id}`, formData);
-      setTasks((prev) => prev.map((x) => (x._id === data._id ? data : x)));
+      // Update complaint (status can be changed here because we’re in edit mode)
+      const { data } = await axiosInstance.patch(`/api/complaints/${editingTask._id}`, form);
+      setTasks((prev) => prev.map((t) => (t._id === data._id ? data : t)));
       setEditingTask(null);
     } else {
-      // US1: Register complaint
-      const { data } = await axiosInstance.post('/api/complaints', formData);
+      // Create complaint — FORCE status to Open on create
+      const { data } = await axiosInstance.post('/api/complaints', { ...form, status: 'Open' });
       setTasks((prev) => [data, ...prev]);
     }
-    // reset
-    setFormData({
+
+    // clear form
+    setForm({
       complainantName: '',
       email: '',
       phoneNumber: '',
       title: '',
       description: '',
       category: 'Low',
-      assignedTo: ''
+      assignedTo: '',
+      status: 'Open'
     });
   };
 
-  const cancelEdit = () => setEditingTask(null);
-
   return (
-    <div className="max-w-xl mx-auto mb-6">
-      <h2 className="text-xl font-semibold mb-3">
-        {editingTask ? 'Edit Complaint' : 'Register Complaint'}
-      </h2>
+    <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4 border rounded">
+      <input
+        name="complainantName"
+        value={form.complainantName}
+        onChange={handleChange}
+        placeholder="Complainant Name"
+        required
+        className="w-full p-2 border mb-2"
+      />
+      <input
+        name="email"
+        type="email"
+        value={form.email}
+        onChange={handleChange}
+        placeholder="Email"
+        required
+        className="w-full p-2 border mb-2"
+      />
+      <input
+        name="phoneNumber"
+        value={form.phoneNumber}
+        onChange={handleChange}
+        placeholder="Phone Number"
+        required
+        className="w-full p-2 border mb-2"
+      />
+      <input
+        name="title"
+        value={form.title}
+        onChange={handleChange}
+        placeholder="Complaint Title"
+        required
+        className="w-full p-2 border mb-2"
+      />
+      <textarea
+        name="description"
+        value={form.description}
+        onChange={handleChange}
+        placeholder="Description"
+        className="w-full p-2 border mb-2"
+        rows={3}
+      />
+      <select
+        name="category"
+        value={form.category}
+        onChange={handleChange}
+        className="w-full p-2 border mb-2"
+      >
+        <option value="Low">Low</option>
+        <option value="Moderate">Moderate</option>
+        <option value="High">High</option>
+      </select>
 
-      <form onSubmit={handleSubmit} className="space-y-2">
-        <input className="border p-2 w-full" name="complainantName" placeholder="Complainant Name"
-               value={formData.complainantName} onChange={handleChange} required />
-        <input className="border p-2 w-full" name="email" type="email" placeholder="Email Address"
-               value={formData.email} onChange={handleChange} required />
-        <input className="border p-2 w-full" name="phoneNumber" placeholder="Phone Number"
-               value={formData.phoneNumber} onChange={handleChange} required />
+      <input
+        name="assignedTo"
+        value={form.assignedTo}
+        onChange={handleChange}
+        placeholder="Assigned To"
+        required
+        className="w-full p-2 border mb-2"
+      />
 
-        <input className="border p-2 w-full" name="title" placeholder="Title for the Complaint"
-               value={formData.title} onChange={handleChange} required />
-        <textarea className="border p-2 w-full" name="description" placeholder="Description"
-                  rows={3} value={formData.description} onChange={handleChange} />
-
-        <select className="border p-2 w-full" name="category" value={formData.category} onChange={handleChange}>
-          <option>Low</option>
-          <option>Moderate</option>
-          <option>High</option>
+      {/* Status is editable ONLY when editing an existing complaint */}
+      {editingTask && (
+        <select
+          name="status"
+          value={form.status}
+          onChange={handleChange}
+          className="w-full p-2 border mb-2"
+        >
+          <option value="Open">Open</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Resolved">Resolved</option>
+          <option value="Closed - No Resolution">Closed - No Resolution</option>
         </select>
+      )}
 
-        <input className="border p-2 w-full" name="assignedTo" placeholder="Assigned To"
-               value={formData.assignedTo} onChange={handleChange} required />
-
-        <div className="flex items-center gap-2">
-          <button className="bg-blue-600 text-white px-4 py-2 rounded" type="submit">
-            {editingTask ? 'Save Changes' : 'Submit'}
-          </button>
-          {editingTask && (
-            <button type="button" onClick={cancelEdit} className="px-4 py-2 rounded border">
-              Cancel
-            </button>
-          )}
-        </div>
-      </form>
-    </div>
+      <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">
+        {editingTask ? 'Update Complaint' : 'Add Complaint'}
+      </button>
+    </form>
   );
 };
 
