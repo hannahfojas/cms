@@ -21,7 +21,7 @@ const TaskList = ({ tasks, setTasks, setEditingTask }) => {
     setTasks(prev => prev.map(x => x._id === data._id ? data : x));
   };
 
-  // Filtered list for rendering
+  // Filtered list (please work!)
   const visible = tasks.filter(t => statusFilter === 'All' || t.status === statusFilter);
   const canClose = (s) => s !== 'Closed - No Resolution' && s !== 'Resolved';
 
