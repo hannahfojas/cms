@@ -1,8 +1,19 @@
 import { useEffect, useState } from 'react';
 import axiosInstance from '../axiosConfig';
 
+// Compute Age (days), freezes when Resolved/Closed
+const computeAgeDays = (doc) => {
+  if (!doc?.createdAt) return '-';
+  const created = new Date(doc.createdAt).getTime();
+  const done = doc.status === 'Resolved' || doc.status === 'Closed - No Resolution';
+  const end = done && doc.completionDate ? new Date(doc.completionDate).getTime() : Date.now();
+  const days = Math.floor((end - created) / (1000 * 60 * 60 * 24));
+  return Number.isFinite(days) ? days : '-';
+};
+
 const TaskList = ({ tasks, setTasks, setEditingTask }) => {
-  const [statusFilter, setStatusFilter] = useState('All'); // NEW
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [busyId, setBusyId] = useState(null);
 
   // Load all complaints
   const load = async () => {
@@ -17,11 +28,15 @@ const TaskList = ({ tasks, setTasks, setEditingTask }) => {
   // Close without resolution
   const closeWithoutResolution = async (id) => {
     if (!window.confirm('Close without resolution?')) return;
-    const { data } = await axiosInstance.post(`/api/complaints/${id}/close`);
-    setTasks(prev => prev.map(x => x._id === data._id ? data : x));
+    try {
+      setBusyId(id);
+      const { data } = await axiosInstance.post(`/api/complaints/${id}/close`);
+      setTasks(prev => prev.map(x => (x._id === data._id ? data : x)));
+    } finally {
+      setBusyId(null);
+    }
   };
 
-  // Filtered list (please work!)
   const visible = tasks.filter(t => statusFilter === 'All' || t.status === statusFilter);
   const canClose = (s) => s !== 'Closed - No Resolution' && s !== 'Resolved';
 
@@ -32,8 +47,9 @@ const TaskList = ({ tasks, setTasks, setEditingTask }) => {
 
         {/* Status Filter */}
         <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-600">Filter by status:</label>
+          <label htmlFor="statusFilter" className="text-sm text-gray-600">Filter by status:</label>
           <select
+            id="statusFilter"
             className="border p-2"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -70,14 +86,23 @@ const TaskList = ({ tasks, setTasks, setEditingTask }) => {
               <td className="p-2 border">{x.category}</td>
               <td className="p-2 border">{x.assignedTo}</td>
               <td className="p-2 border">{x.status}</td>
-              <td className="p-2 border">{x.ageDays ?? '-'}</td>
+              <td className="p-2 border">{computeAgeDays(x)}</td>
               <td className="p-2 border space-x-2">
-                <button onClick={() => onEdit(x)} className="px-2 py-1 bg-yellow-200 rounded">
+                <button
+                  type="button"
+                  onClick={() => onEdit(x)}
+                  className="px-2 py-1 bg-yellow-200 rounded"
+                >
                   Edit
                 </button>
                 {canClose(x.status) && (
-                  <button onClick={() => closeWithoutResolution(x._id)} className="px-2 py-1 bg-gray-200 rounded">
-                    Close w/o Res
+                  <button
+                    type="button"
+                    onClick={() => closeWithoutResolution(x._id)}
+                    className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
+                    disabled={busyId === x._id}
+                  >
+                    {busyId === x._id ? 'Closing…' : 'Close w/o Res'}
                   </button>
                 )}
               </td>
