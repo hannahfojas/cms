@@ -1,6 +1,6 @@
 const Complaint = require('../models/Complaint');
 
-// US1: Create complaint
+// Create complaint
 const createComplaint = async (
   req,
   res
@@ -14,7 +14,7 @@ const createComplaint = async (
   }
 };
 
-// US2: Get all complaints (includes ageDays)
+// Get all complaints (includes ageDays has been added also)
 const getComplaints = async (
   req,
   res
@@ -36,7 +36,7 @@ const getComplaints = async (
   }
 };
 
-// US3: Update complaint details
+// Update complaint details
 const updateComplaint = async (
   req,
   res
@@ -53,7 +53,7 @@ const updateComplaint = async (
   }
 };
 
-// US4: Close without resolution
+// Close without resolution
 const closeWithoutResolution = async (
   req,
   res
@@ -61,7 +61,7 @@ const closeWithoutResolution = async (
   try {
     const doc = await Complaint.findByIdAndUpdate(
       req.params.id,
-      { status: 'Closed - No Resolution' }, // (original behavior: no completionDate here)
+      { status: 'Closed - No Resolution', completionDate: new Date() }, //stops aging also if closed even if no reso
       { new: true }
     );
     if (!doc) return res.status(404).json({ message: 'Not found' });
@@ -71,7 +71,7 @@ const closeWithoutResolution = async (
   }
 };
 
-// US5: Update status (sets completionDate when Resolved)
+// Update status (sets completionDate when Resolved)
 const updateStatus = async (
   req,
   res
