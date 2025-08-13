@@ -1,10 +1,19 @@
 const router = require('express').Router();
-const c = require('../controllers/complaintController');
+const {
+  createComplaint,
+  getComplaints,
+  updateComplaint,
+  closeWithoutResolution,
+  updateStatus,
+  addResolutionNote
+} = require('../controllers/complaintController');
 
-router.post('/', c.createComplaint);
-router.get('/', c.getComplaints);
-router.patch('/:id', c.updateComplaint);
-router.post('/:id/close', c.closeWithoutResolution);
-router.post('/:id/status', c.updateStatus);
+router.post('/', createComplaint);
+router.get('/',  getComplaints);
+router.patch('/:id', updateComplaint);
+router.post('/:id/close',  closeWithoutResolution);
+router.post('/:id/status', updateStatus);
+
+router.post('/:id/notes', addResolutionNote);
 
 module.exports = router;
